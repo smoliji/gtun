@@ -1,0 +1,29 @@
+# Dummy gtun config — works out of the box, no cloud access needed.
+# Run with: pnpm dev ./examples/dummy.config.yaml
+#
+# Every command runs via `sh -c` and `${port}` is substituted with the
+# (editable) local port. These tunnels only spawn local processes so you can
+# play with the UI — start/stop, edit ports, watch logs — without any real
+# infrastructure.
+tunnels:
+  # A real local listener. `up` once it prints the serving line.
+  - name: http-dummy
+    command: python3 -m http.server ${port}
+    port: 8000
+    readyPattern: "Serving HTTP"
+
+  # Logs a line and stays alive. No readyPattern -> `up` once it survives briefly.
+  - name: idle-dummy
+    command: sh -c 'echo "listening on ${port}"; sleep 100000'
+    port: 9001
+
+  # Shows the connecting -> up transition: waits, then prints the ready line.
+  - name: slow-dummy
+    command: sh -c 'echo connecting; sleep 3; echo "ready for new connections"; sleep 100000'
+    port: 9002
+    readyPattern: "ready for new connections"
+
+  # Exits immediately -> ends up in the error state. Handy to see `✗`.
+  - name: failing-dummy
+    command: sh -c 'echo "boom"; exit 1'
+    port: 9003

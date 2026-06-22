@@ -1,0 +1,34 @@
+# Example gtun config. Copy to ./gtun.config.yaml and edit.
+#
+# Every tunnel is just a command. `${port}` is substituted with the (editable)
+# local port and the command runs via `sh -c`. By default a tunnel is shown as
+# `up` once it has stayed alive briefly; set `readyPattern` to instead wait for
+# a specific log line (matched case-insensitively).
+tunnels:
+  # cloud-sql-proxy (v2): <connection-name> --port <port>
+  - name: userapi-sql
+    command: cloud-sql-proxy box-now-production:europe-west1:userapi-db --port ${port}
+    port: 5432
+    readyPattern: "Listening on|ready for new connections"
+
+  # gcloud IAP tunnel to a VM.
+  - name: bastion-pg
+    command: >
+      gcloud compute start-iap-tunnel bastion-vm 5432
+      --local-host-port=localhost:${port}
+      --zone=europe-west1-b --project=my-gcp-project
+    port: 5433
+    readyPattern: "Listening on port"
+
+  # Plain SSH local forward. No readyPattern -> up once it stays alive.
+  - name: redis-ssh
+    command: ssh -N -L ${port}:127.0.0.1:6379 bastion.example.com
+    port: 6379
+
+  # Extra env (e.g. a specific service-account key) is passed to the process.
+  - name: locationapi-sql
+    command: cloud-sql-proxy box-now-production:europe-west1:locationapi-db --port ${port}
+    port: 5433
+    readyPattern: "Listening on"
+    env:
+      GOOGLE_APPLICATION_CREDENTIALS: /path/to/key.json
