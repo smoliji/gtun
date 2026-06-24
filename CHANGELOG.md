@@ -4,6 +4,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ## [Unreleased]
 
+### Fixed
+
+- Terminal rendering and resize artifacts: render on the alternate screen, keep a
+  line of headroom below the frame, and window the tunnel list so it never
+  outgrows the terminal.
+
 ## [0.1.0] - 2026-06-22
 
 ### Added

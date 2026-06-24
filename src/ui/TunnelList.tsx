@@ -23,14 +23,25 @@ interface Props {
   editing: boolean;
   editBuffer: string;
   width: number;
+  /** Max tunnel rows to show; the list scrolls to keep the selection visible. */
+  maxRows: number;
 }
 
-export function TunnelList({ tunnels, selected, editing, editBuffer, width }: Props) {
+export function TunnelList({ tunnels, selected, editing, editBuffer, width, maxRows }: Props) {
+  // Window the list so it never outgrows the terminal (which would re-introduce
+  // the redraw cascade). Anchor the window to keep the selected row in view.
+  const start = Math.min(
+    Math.max(0, selected - maxRows + 1),
+    Math.max(0, tunnels.length - maxRows),
+  );
+  const window = tunnels.slice(start, start + maxRows);
+
   return (
     <Box flexDirection="column" width={width} borderStyle="round" paddingX={1} flexShrink={0}>
       <Text bold>Tunnels</Text>
       <Box flexDirection="column" marginTop={1}>
-        {tunnels.map((t, i) => {
+        {window.map((t, w) => {
+          const i = start + w;
           const active = i === selected;
           const isEditing = active && editing;
           const port = isEditing ? `${editBuffer}_` : String(t.port);

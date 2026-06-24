@@ -94,7 +94,10 @@ export function App({ manager }: Props) {
     }
   });
 
-  const logRows = Math.max(3, (stdout?.rows ?? 24) - 6);
+  // Keep a line of headroom: the full frame (log panel + status bar) must stay
+  // strictly shorter than the terminal, or Ink's in-place redraw scrolls and
+  // cascades. Frame height = logRows + 5, so cap logRows at rows - 7.
+  const logRows = Math.max(3, (stdout?.rows ?? 24) - 7);
   const listWidth = computeListWidth(tunnels, stdout?.columns ?? 80);
 
   if (quitting) {
@@ -114,6 +117,7 @@ export function App({ manager }: Props) {
           editing={editing}
           editBuffer={editBuffer}
           width={listWidth}
+          maxRows={logRows}
         />
         <LogPanel tunnel={current} rows={logRows} />
       </Box>

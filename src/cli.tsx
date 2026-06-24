@@ -45,6 +45,19 @@ function fail(msg: string): never {
   process.exit(1);
 }
 
+// Run the TUI on the terminal's alternate screen so Ink owns a clean,
+// full-height canvas. Without this, anything already on screen (e.g. the
+// `pnpm start` banner) pushes the frame past the bottom row; the terminal
+// scrolls, Ink's in-place redraw lands off by a line, and every re-render
+// cascades a fresh copy down the screen.
+function enterAltScreen(): void {
+  if (process.stdout.isTTY) process.stdout.write('\x1b[?1049h\x1b[H');
+}
+
+function leaveAltScreen(): void {
+  if (process.stdout.isTTY) process.stdout.write('\x1b[?1049l');
+}
+
 function main() {
   const argv = process.argv.slice(2);
   if (argv.includes('--help') || argv.includes('-h')) {
@@ -62,17 +75,21 @@ function main() {
     fail(`failed to load ${path}: ${(err as Error).message}`);
   }
 
+  enterAltScreen();
   const { waitUntilExit } = render(<App manager={manager} />, { exitOnCtrlC: false });
 
   // Last-resort cleanup if the process is terminated outside the TUI.
   const hardStop = () => {
     manager.stopAll();
+    leaveAltScreen();
+    process.exit(0);
   };
   process.on('SIGTERM', hardStop);
   process.on('SIGHUP', hardStop);
 
   waitUntilExit().then(() => {
     manager.stopAll();
+    leaveAltScreen();
     process.exit(0);
   });
 }
