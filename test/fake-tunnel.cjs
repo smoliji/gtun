@@ -8,6 +8,11 @@ if (mode === 'crash') {
   process.exit(2);
 }
 
+if (mode === 'done') {
+  console.log('all done');
+  process.exit(0);
+}
+
 setTimeout(() => {
   console.log('Listening on port 5432');
 }, 50);

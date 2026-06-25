@@ -8,6 +8,7 @@ const GLYPH: Record<TunnelStatus, string> = {
   connecting: '◐',
   up: '●',
   error: '✗',
+  done: '✓',
 };
 
 const COLOR: Record<TunnelStatus, string> = {
@@ -15,6 +16,7 @@ const COLOR: Record<TunnelStatus, string> = {
   connecting: 'yellow',
   up: 'green',
   error: 'red',
+  done: 'green',
 };
 
 interface Props {

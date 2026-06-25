@@ -4,6 +4,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ## [Unreleased]
 
+### Added
+
+- `done` status for tunnels that exit cleanly (code 0), shown as a green `✓`.
+
 ### Fixed
 
 - Terminal rendering and resize artifacts: render on the alternate screen, keep a

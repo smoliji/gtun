@@ -52,6 +52,14 @@ test('non-zero exit marks tunnel as error', async () => {
   assert.match(t.lastError ?? '', /code 2/);
 });
 
+test('clean exit (code 0) marks tunnel as done', async () => {
+  const mgr = new TunnelManager([customCfg(`node ${fake} done`)]);
+  const t = mgr.tunnels[0]!;
+  t.start();
+  await waitFor(() => t.status === 'done');
+  assert.equal(t.status, 'done');
+});
+
 test('editing port restarts a running tunnel on the new port', async () => {
   const mgr = new TunnelManager([customCfg(`node ${fake} ready`)]);
   const t = mgr.tunnels[0]!;

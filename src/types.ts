@@ -1,4 +1,4 @@
-export type TunnelStatus = 'off' | 'connecting' | 'up' | 'error';
+export type TunnelStatus = 'off' | 'connecting' | 'up' | 'error' | 'done';
 
 /** Raw shape as written in the YAML config. */
 export interface TunnelConfig {

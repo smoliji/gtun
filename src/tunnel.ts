@@ -75,6 +75,11 @@ export class Tunnel {
         this.append('sys', 'stopped');
         return;
       }
+      if (!signal && code === 0) {
+        this.append('sys', 'exited with code 0');
+        this.setStatus('done');
+        return;
+      }
       const reason = signal ? `killed by ${signal}` : `exited with code ${code}`;
       this.fail(reason);
     });
@@ -199,6 +204,8 @@ export class TunnelManager extends EventEmitter {
 
   /** True once no tunnel still holds a running process. */
   allStopped(): boolean {
-    return this.tunnels.every((t) => t.status === 'off' || t.status === 'error');
+    return this.tunnels.every(
+      (t) => t.status === 'off' || t.status === 'error' || t.status === 'done',
+    );
   }
 }
