@@ -1,6 +1,62 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ConfigError, resolveCommand, validate } from '../src/config.js';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { ConfigError, resolveCommand, resolveConfigPath, validate } from '../src/config.js';
+
+function tmp(): string {
+  return mkdtempSync(join(tmpdir(), 'gtun-'));
+}
+
+test('resolveConfigPath honors --config, resolved against cwd', () => {
+  const cwd = tmp();
+  assert.equal(
+    resolveConfigPath(['--config', 'my.yaml'], { cwd, configHome: tmp() }),
+    resolve(cwd, 'my.yaml'),
+  );
+  assert.equal(
+    resolveConfigPath(['-c', '/abs/my.yaml'], { cwd, configHome: tmp() }),
+    '/abs/my.yaml',
+  );
+});
+
+test('resolveConfigPath throws on a --config flag without a path', () => {
+  assert.throws(
+    () => resolveConfigPath(['--config'], { cwd: tmp(), configHome: tmp() }),
+    ConfigError,
+  );
+});
+
+test('resolveConfigPath takes a positional argument over defaults', () => {
+  const cwd = tmp();
+  writeFileSync(join(cwd, 'gtun.yaml'), 'tunnels: []');
+  assert.equal(
+    resolveConfigPath(['other.yaml'], { cwd, configHome: tmp() }),
+    resolve(cwd, 'other.yaml'),
+  );
+});
+
+test('resolveConfigPath finds a default name in cwd before home', () => {
+  const cwd = tmp();
+  const configHome = tmp();
+  writeFileSync(join(cwd, 'gtun.yaml'), 'tunnels: []');
+  writeFileSync(join(configHome, 'gtun.yaml'), 'tunnels: []');
+  assert.equal(resolveConfigPath([], { cwd, configHome }), join(cwd, 'gtun.yaml'));
+});
+
+test('resolveConfigPath falls back to the home config dir', () => {
+  const configHome = tmp();
+  writeFileSync(join(configHome, 'gtun.config.yaml'), 'tunnels: []');
+  assert.equal(
+    resolveConfigPath([], { cwd: tmp(), configHome }),
+    join(configHome, 'gtun.config.yaml'),
+  );
+});
+
+test('resolveConfigPath returns null when nothing is found', () => {
+  assert.equal(resolveConfigPath([], { cwd: tmp(), configHome: tmp() }), null);
+});
 
 test('validate rejects empty config', () => {
   assert.throws(() => validate({}), ConfigError);

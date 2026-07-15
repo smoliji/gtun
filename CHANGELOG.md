@@ -7,6 +7,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 ### Added
 
 - `done` status for tunnels that exit cleanly (code 0), shown as a green `✓`.
+- Look for the config in `~/.config/gtun/` (or `$XDG_CONFIG_HOME/gtun/`) when none
+  is given and the current directory has none.
 
 ### Changed
 

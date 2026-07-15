@@ -1,9 +1,47 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parse } from 'yaml';
 import type { Config, ResolvedCommand, TunnelConfig } from './types.js';
 
 export class ConfigError extends Error {}
+
+export const DEFAULT_CONFIG_NAMES = [
+  'gtun.config.yaml',
+  'gtun.config.yml',
+  'gtun.yaml',
+  'gtun.yml',
+];
+
+interface ConfigLookup {
+  cwd: string;
+  /** Home config directory, e.g. ~/.config/gtun. */
+  configHome: string;
+}
+
+/**
+ * Find the config path from CLI args, falling back to default names in the
+ * current directory and then the home config directory. Returns null when
+ * nothing is found; throws ConfigError on a malformed `--config` flag.
+ */
+export function resolveConfigPath(argv: string[], lookup: ConfigLookup): string | null {
+  const flagIdx = argv.findIndex((a) => a === '--config' || a === '-c');
+  if (flagIdx !== -1) {
+    const p = argv[flagIdx + 1];
+    if (!p) throw new ConfigError('--config requires a path');
+    return resolve(lookup.cwd, p);
+  }
+
+  const positional = argv.find((a) => !a.startsWith('-'));
+  if (positional) return resolve(lookup.cwd, positional);
+
+  for (const dir of [lookup.cwd, lookup.configHome]) {
+    for (const name of DEFAULT_CONFIG_NAMES) {
+      const candidate = resolve(dir, name);
+      if (existsSync(candidate)) return candidate;
+    }
+  }
+  return null;
+}
 
 export function loadConfig(path: string): Config {
   const raw = readFileSync(resolve(path), 'utf8');

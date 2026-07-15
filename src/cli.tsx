@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import React from 'react';
-import { existsSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 import { render } from 'ink';
-import { ConfigError, loadConfig } from './config.js';
+import { ConfigError, DEFAULT_CONFIG_NAMES, loadConfig, resolveConfigPath } from './config.js';
 import { TunnelManager } from './tunnel.js';
 import { App } from './ui/App.js';
 
@@ -13,7 +13,8 @@ Usage:
   gtun [config]
   gtun --config <path>
 
-Defaults: looks for gtun.config.yaml or gtun.yaml in the current directory.
+Defaults: looks for gtun.config.yaml or gtun.yaml in the current directory,
+then in ~/.config/gtun/ (or $XDG_CONFIG_HOME/gtun/).
 
 Keys:
   ↑↓ / j k   move        s   start/stop selected
@@ -22,22 +23,9 @@ Keys:
   q / Ctrl-C quit (stops every tunnel first)
 `;
 
-const DEFAULT_NAMES = ['gtun.config.yaml', 'gtun.config.yml', 'gtun.yaml', 'gtun.yml'];
-
-function resolveConfigPath(argv: string[]): string {
-  const flagIdx = argv.findIndex((a) => a === '--config' || a === '-c');
-  if (flagIdx !== -1) {
-    const p = argv[flagIdx + 1];
-    if (!p) fail('--config requires a path');
-    return resolve(p!);
-  }
-  const positional = argv.find((a) => !a.startsWith('-'));
-  if (positional) return resolve(positional);
-
-  for (const name of DEFAULT_NAMES) {
-    if (existsSync(name)) return resolve(name);
-  }
-  fail(`No config given and none of ${DEFAULT_NAMES.join(', ')} found in ${process.cwd()}.`);
+function configHomeDir(): string {
+  const base = process.env.XDG_CONFIG_HOME || resolve(homedir(), '.config');
+  return resolve(base, 'gtun');
 }
 
 function fail(msg: string): never {
@@ -65,7 +53,22 @@ function main() {
     return;
   }
 
-  const path = resolveConfigPath(argv);
+  const configHome = configHomeDir();
+  let path: string;
+  try {
+    const found = resolveConfigPath(argv, { cwd: process.cwd(), configHome });
+    if (!found) {
+      fail(
+        `No config given and none of ${DEFAULT_CONFIG_NAMES.join(', ')} ` +
+          `found in ${process.cwd()} or ${configHome}.`,
+      );
+    }
+    path = found;
+  } catch (err) {
+    if (err instanceof ConfigError) fail(err.message);
+    throw err;
+  }
+
   let manager: TunnelManager;
   try {
     const config = loadConfig(path);
